@@ -2,7 +2,6 @@ package com.example.nataliatrybulova.test_2416;
 
 import android.annotation.SuppressLint;
 import android.app.ProgressDialog;
-import android.content.ContentValues;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -25,18 +24,16 @@ import com.google.android.gms.appindexing.Action;
 import com.google.android.gms.appindexing.AppIndex;
 import com.google.android.gms.common.api.GoogleApiClient;
 
+import org.json.JSONObject;
+
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
-import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.OutputStream;
+import java.net.HttpURLConnection;
 import java.net.URL;
-import java.security.KeyManagementException;
 import java.security.KeyStore;
-import java.security.NoSuchAlgorithmException;
 import java.security.cert.Certificate;
 import java.security.cert.CertificateFactory;
 
@@ -44,11 +41,12 @@ import javax.net.ssl.HostnameVerifier;
 import javax.net.ssl.HttpsURLConnection;
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManagerFactory;
 
 
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "!!!MainActivity!!!";
     private static final int REQUEST_SIGNUP = 0;
     EditText _emailText;
     EditText _passwordText;
@@ -207,97 +205,6 @@ public class MainActivity extends AppCompatActivity {
         return valid;
     }
 
-    public void connection() throws IOException, NoSuchAlgorithmException, KeyManagementException {
-        URL url = new URL("http://192.168.10.12");
-
-
-        //HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-        ///urlConnection.setSSLSocketFactory(context.getSocketFactory());
-        //InputStream in = urlConnection.getInputStream();
-        //HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-
-
-        HttpsURLConnection urlConnection = (HttpsURLConnection) url.openConnection();
-        SSLContext ssl;
-        urlConnection.connect();
-        ssl = SSLContext.getInstance("TLS");
-        ssl.init(null, null, new java.security.SecureRandom());
-        urlConnection.setSSLSocketFactory(ssl.getSocketFactory());
-        //urlConnection.setSSLSocketFactory(context.getSocketFactory());
-
-        // Use this if you need SSL authentication
-       // String userpass = "webserver" + ":" + "heslo";
-       // String basicAuth = "Basic " + Base64.encodeToString(userpass.getBytes(), Base64.DEFAULT);
-       // urlConnection.setRequestProperty("Authorization", basicAuth);
-
-        urlConnection.setReadTimeout(7000);
-        urlConnection.setConnectTimeout(7000);
-        urlConnection.setRequestMethod("POST");
-        urlConnection.setDoInput(true);
-
-        // Add any data you wish to post here
-
-        urlConnection.connect();
-
-        try {
-            InputStream in = new BufferedInputStream(urlConnection.getInputStream());
-            convertStreamToString(in);
-
-        }
-        finally{
-            urlConnection.disconnect();
-        }
-    }
-
-    private String readStream(InputStream is) {
-        try {
-            ByteArrayOutputStream bo = new ByteArrayOutputStream();
-            int i = is.read();
-            while(i != -1) {
-                bo.write(i);
-                i = is.read();
-            }
-            return bo.toString();
-        } catch (IOException e) {
-            return "";
-        }
-    }
-
-    private static String convertStreamToString(InputStream is) {
-    /*
-     * To convert the InputStream to String we use the BufferedReader.readLine()
-     * method. We iterate until the BufferedReader return null which means
-     * there's no more data to read. Each line will appended to a StringBuilder
-     * and returned as String.
-     */
-        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
-        StringBuilder sb = new StringBuilder();
-
-        String line = null;
-        try {
-            while ((line = reader.readLine()) != null) {
-                sb.append(line + "\n");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        } finally {
-            try {
-                is.close();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
-        }
-        return sb.toString();
-    }
-
-    private String writeStream(OutputStream out) throws IOException {
-        String input = "Hello world";
-
-        out.write(input.getBytes());
-        out.flush();
-
-        return input;
-    }
     @Override
     public void onStart() {
         super.onStart();
@@ -340,35 +247,35 @@ public class MainActivity extends AppCompatActivity {
     // HTTP POST request
     private void sendPost() throws Exception {
 
-        String url = "https://192.168.10.10";
+        String url = "http://192.168.0.102/customers/add";
         URL obj = new URL(url);
-        HttpsURLConnection con = (HttpsURLConnection) obj.openConnection();
+        HttpURLConnection con = (HttpURLConnection) obj.openConnection();
 
         //add reuqest header
         con.setRequestMethod("POST");
         con.setRequestProperty("User-Agent", "My header");
-        con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        //con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+        con.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
 
         con.setDoInput(true);
-        con.setDoOutput(true);
 
-        ContentValues values=new ContentValues();
-        values.put("firstname", "Natalka");
-        values.put("lastname", "Trybulova");
-        values.put("email", "n.trybulova@gmail.com");
-
+        JSONObject customer = new JSONObject();
+        customer.put("firstname", "Natalka");
+        customer.put("lastname", "Trybulova");
+        customer.put("email", "n.trybulova@gmail.com");
+        customer.put("level_id", "1");
 
         // Send post request
         con.setDoOutput(true);
         DataOutputStream wr = new DataOutputStream(con.getOutputStream());
-        wr.writeBytes(String.valueOf(values));
+        wr.write(customer.toString().getBytes("UTF-8"));
+        //wr.writeBytes(customer.toString());
         wr.flush();
         wr.close();
 
         int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'POST' request to URL : " + url);
-        System.out.println("Post parameters : " + values);
-        System.out.println("Response Code : " + responseCode);
+        Log.d(TAG, "\nSending 'POST' request to URL : " + url);
+        Log.d(TAG, "Response Code : " + responseCode);
 
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(con.getInputStream()));
@@ -387,7 +294,7 @@ public class MainActivity extends AppCompatActivity {
     // HTTP GET request
     private void sendGet() throws Exception {
 
-        String url = "https://192.168.10.10";
+        String url = "https://192.168.0.102";
 
         URL obj = new URL(url);
 
@@ -406,8 +313,8 @@ public class MainActivity extends AppCompatActivity {
         con.setRequestProperty("User-Agent", "My header");
 
         int responseCode = con.getResponseCode();
-        System.out.println("\nSending 'GET' request to URL : " + url);
-        System.out.println("Response Code : " + responseCode);
+        Log.d(TAG, "\nSending 'GET' request to URL : " + url);
+        Log.d(TAG, "Response Code : " + responseCode);
         con.connect();
         BufferedReader in = new BufferedReader(
                 new InputStreamReader(con.getInputStream()));
@@ -420,7 +327,7 @@ public class MainActivity extends AppCompatActivity {
         in.close();
 
         //print result
-        System.out.println(response.toString());
+        Log.d(TAG, response.toString());
 
     }
 
@@ -437,7 +344,7 @@ public class MainActivity extends AppCompatActivity {
      * https://developer.android.com/training/articles/security-ssl.html#SelfSigned
      */
     @SuppressLint("SdCardPath")
-    public static HttpsURLConnection setUpHttpsConnection(String urlString, KeyStore keyStore)
+    public static HttpsURLConnection setUpHttpsConnection(String urlString, KeyStore keyStore, int typeOfHttp)
     {
         try
         {
@@ -446,13 +353,51 @@ public class MainActivity extends AppCompatActivity {
             TrustManagerFactory tmf = TrustManagerFactory.getInstance(tmfAlgorithm);
             tmf.init(keyStore);
 
+            URL url = new URL(urlString);
+
+            HttpsURLConnection urlConnection = (HttpsURLConnection)url.openConnection();
+
             // Create an SSLContext that uses our TrustManager
             SSLContext context = SSLContext.getInstance("TLS");
             context.init(null, tmf.getTrustManagers(), null);
 
+            SSLSocketFactory NoSSLv3Factory = new NoSSLv3SocketFactory(context.getSocketFactory());
+            HttpsURLConnection.setDefaultSSLSocketFactory(NoSSLv3Factory);
+            urlConnection.connect();
+            //urlConnection.setSSLSocketFactory(context.getSocketFactory());
             // Tell the URLConnection to use a SocketFactory from our SSLContext
-            URL url = new URL(urlString);
-            HttpsURLConnection urlConnection = (HttpsURLConnection)url.openConnection();
+
+
+            //Ak ide o POST
+            if (typeOfHttp == 1)
+            {
+                urlConnection.setRequestMethod("POST");
+                //urlConnection.setRequestProperty("User-Agent", "My header");
+                //con.setRequestProperty("Accept-Language", "en-US,en;q=0.5");
+                urlConnection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+                urlConnection.setDoInput(true);
+
+                JSONObject customer = new JSONObject();
+                customer.put("firstname", "Viktorka");
+                customer.put("lastname", "Lovasova");
+                customer.put("email", "@gmail.com");
+                customer.put("level_id", "1");
+
+                // Send post request Specifies whether this URLConnection allows sending data.
+                urlConnection.setDoOutput(true);
+                // Send post request
+                DataOutputStream wr = new DataOutputStream(urlConnection.getOutputStream());
+                wr.write(customer.toString().getBytes("UTF-8"));
+                //wr.writeBytes(customer.toString());
+                wr.flush();
+                wr.close();
+            }
+            //Ak ide o GET
+            else
+            {
+                urlConnection.setRequestMethod("GET");
+
+            }
 
             // Ignoruje hostname v certifikate
             HttpsURLConnection.setDefaultHostnameVerifier(new HostnameVerifier() {
@@ -460,15 +405,14 @@ public class MainActivity extends AppCompatActivity {
                     return true;
                 }
             });
-            //SSLSocketFactory ssss = context.getSocketFactory();
-            urlConnection.setSSLSocketFactory(context.getSocketFactory());
+
+
 
             return urlConnection;
         }
         catch (Exception ex)
         {
             ex.printStackTrace();
-            Log.e(TAG, "Failed to establish SSL connection to server: " + ex.toString());
             Log.e(TAG, "Failed to establish SSL connection to server: " + ex.toString());
             return null;
         }
@@ -482,11 +426,11 @@ public class MainActivity extends AppCompatActivity {
         protected String doInBackground(String... urls) {
             try {
 
-                HttpsURLConnection urlConnection = setUpHttpsConnection("https://192.168.10.10", keyStore);
+                //Ak get = 0, ak post = 1
+                HttpsURLConnection urlConnection = setUpHttpsConnection("https://192.168.0.102/customers/add", keyStore, 1);
                 //InputStream in = urlConnection.getInputStream();
                 BufferedReader in = new BufferedReader(
                         new InputStreamReader(urlConnection.getInputStream()));
-
                 String inputLine;
                 StringBuffer response = new StringBuffer();
 
@@ -497,8 +441,8 @@ public class MainActivity extends AppCompatActivity {
                 in.close();
 
                 //print result
-                System.out.println(response.toString());
-
+                Log.d(TAG, response.toString());
+                //sendPost();
 
             } catch (Exception e) {
                 this.exception = e;
